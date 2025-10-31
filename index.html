@@ -1,0 +1,747 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>생태·환경 퀴즈 게임</title>
+  <style>
+    :root{
+      --bg1: #0f1724;
+      --bg2: #071022;
+      --card: rgba(255,255,255,0.06);
+      --accent: #7ee787; /* pale green */
+      --accent-2: #6ec3ff; /* blue */
+      --glass: rgba(255,255,255,0.04);
+      --text: #e6f0ef;
+      --muted: #9fb3b0;
+      --success: #66d86b;
+      --danger: #ff7b7b;
+      --radius: 14px;
+      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    }
+
+    /* Page layout - full screen */
+    html,body{
+      height:100%;
+      margin:0;
+      background: radial-gradient(1200px 600px at 10% 10%, rgba(112,197,190,0.06), transparent),
+                  linear-gradient(180deg,var(--bg1), var(--bg2) 70%);
+      color:var(--text);
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+    }
+
+    .app {
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:32px;
+      box-sizing:border-box;
+    }
+
+    .container {
+      width:100%;
+      max-width:1100px;
+      height:calc(100vh - 64px);
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border-radius:18px;
+      box-shadow: 0 10px 40px rgba(2,6,23,0.6), inset 0 1px 0 rgba(255,255,255,0.02);
+      display:grid;
+      grid-template-columns: 360px 1fr;
+      overflow:hidden;
+    }
+
+    /* left sidebar (info / progress) */
+    .sidebar {
+      padding:28px;
+      background: linear-gradient(135deg, rgba(110,195,255,0.04), rgba(126,231,135,0.02));
+      display:flex;
+      flex-direction:column;
+      gap:20px;
+      border-right: 1px solid rgba(255,255,255,0.03);
+    }
+
+    .brand {
+      display:flex;
+      gap:14px;
+      align-items:center;
+    }
+    .logo {
+      width:56px;
+      height:56px;
+      border-radius:12px;
+      background: linear-gradient(135deg,var(--accent),var(--accent-2));
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-weight:700;
+      color:#042028;
+      box-shadow: 0 6px 18px rgba(14,57,46,0.2);
+      font-size:20px;
+    }
+    .brand h1{
+      margin:0;
+      font-size:18px;
+      letter-spacing: -0.2px;
+    }
+    .brand p{
+      margin:0;
+      font-size:12px;
+      color:var(--muted);
+    }
+
+    .progress-wrap{
+      margin-top:8px;
+    }
+    .progress-bar {
+      background: rgba(255,255,255,0.03);
+      height:12px;
+      border-radius:999px;
+      overflow:hidden;
+    }
+    .progress-fill{
+      height:100%;
+      width:0%;
+      background: linear-gradient(90deg,var(--accent),var(--accent-2));
+      border-radius:999px;
+      transition: width 400ms cubic-bezier(.2,.9,.3,1);
+      box-shadow: 0 6px 18px rgba(110,195,255,0.08);
+    }
+    .meta {
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:8px;
+      margin-top:10px;
+      color:var(--muted);
+      font-size:13px;
+    }
+
+    .score-card{
+      margin-top:auto;
+      padding:16px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.015), rgba(255,255,255,0.01));
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,0.02);
+    }
+    .score-card h3{margin:0 0 8px 0; font-size:14px;}
+    .score{ font-size:28px; font-weight:700; color:var(--accent); margin:0; }
+    .controls{ display:flex; gap:8px; margin-top:12px; }
+
+    button.btn{
+      border:0;
+      padding:10px 14px;
+      background:var(--glass);
+      color:var(--text);
+      border-radius:10px;
+      cursor:pointer;
+      font-size:14px;
+      transition: transform 120ms ease, background 120ms;
+    }
+    button.btn:hover{ transform: translateY(-3px); background: rgba(255,255,255,0.06); }
+    button.primary{
+      background: linear-gradient(90deg,var(--accent),var(--accent-2));
+      color:#042028;
+      font-weight:600;
+      box-shadow: 0 10px 30px rgba(110,195,255,0.06);
+    }
+
+    /* main quiz area */
+    .main {
+      padding:42px;
+      display:flex;
+      flex-direction:column;
+      gap:18px;
+      align-items:stretch;
+      position:relative;
+      overflow:hidden;
+    }
+    .card {
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border-radius: var(--radius);
+      padding:28px;
+      box-shadow: 0 6px 30px rgba(2,6,23,0.45);
+      border:1px solid rgba(255,255,255,0.03);
+      flex:1 1 auto;
+      min-height:300px;
+      display:flex;
+      flex-direction:column;
+      gap:18px;
+      position:relative;
+    }
+    .q-header{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+    }
+    .q-id{
+      font-size:13px;
+      color:var(--muted);
+    }
+    .q-text{
+      font-size:20px;
+      font-weight:600;
+      line-height:1.35;
+      color:var(--text);
+    }
+
+    .options{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:12px;
+      margin-top:8px;
+    }
+    .option{
+      padding:14px;
+      border-radius:12px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.005));
+      border:1px solid rgba(255,255,255,0.025);
+      cursor:pointer;
+      transition:transform 120ms ease, box-shadow 120ms;
+      display:flex;
+      align-items:center;
+      gap:12px;
+      min-height:64px;
+    }
+    .option:hover{ transform:translateY(-4px); box-shadow: 0 8px 30px rgba(6,20,30,0.25); }
+    .option .key{
+      width:40px;
+      height:40px;
+      border-radius:10px;
+      background: rgba(255,255,255,0.02);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-weight:700;
+      color:var(--accent-2);
+      font-size:14px;
+    }
+    .option .txt{ font-size:15px; color:var(--text); }
+
+    .option.correct{
+      border-color: rgba(102,216,107,0.18);
+      background: linear-gradient(90deg, rgba(102,216,107,0.08), rgba(110,195,255,0.02));
+      box-shadow: 0 8px 26px rgba(102,216,107,0.06);
+    }
+    .option.wrong{
+      border-color: rgba(255,123,123,0.12);
+      background: linear-gradient(90deg, rgba(255,123,123,0.03), rgba(255,255,255,0.005));
+      opacity:0.9;
+    }
+    .explain{
+      margin-top:6px;
+      font-size:13px;
+      color:var(--muted);
+      line-height:1.4;
+    }
+
+    .actions{
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      align-items:center;
+      margin-top:8px;
+    }
+
+    .nav{
+      display:flex;
+      gap:10px;
+      align-items:center;
+    }
+
+    .chip{
+      padding:8px 10px;
+      border-radius:10px;
+      background: rgba(255,255,255,0.02);
+      font-size:13px;
+      color:var(--muted);
+    }
+
+    /* final result overlay */
+    .overlay{
+      position:absolute;
+      inset:0;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background: linear-gradient(180deg, rgba(2,10,12,0.7), rgba(2,10,12,0.85));
+      z-index:30;
+      padding:30px;
+      box-sizing:border-box;
+      opacity:0;
+      pointer-events:none;
+      transition:opacity 260ms ease;
+    }
+    .overlay.show{ opacity:1; pointer-events:auto; }
+
+    .result-card{
+      width:min(720px,96%);
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      padding:28px;
+      border-radius:18px;
+      text-align:center;
+      border:1px solid rgba(255,255,255,0.03);
+    }
+    .big-score{
+      font-size:56px;
+      margin:8px 0;
+      color:var(--accent);
+      font-weight:800;
+    }
+    .result-msg{ color:var(--muted); margin-bottom:12px; }
+
+    /* small screens */
+    @media (max-width:900px){
+      .container{ grid-template-columns: 1fr; height:auto; min-height:100vh; }
+      .sidebar{ order:2; border-right: none; border-top:1px solid rgba(255,255,255,0.02); }
+      .main{ order:1; padding:24px; }
+      .options{ grid-template-columns:1fr; }
+      .container{ border-radius:0; }
+    }
+
+    /* accessibility focus */
+    .option:focus{ outline:3px solid rgba(110,195,255,0.12); outline-offset:3px; }
+    button:focus{ outline:3px solid rgba(126,231,135,0.12); outline-offset:3px; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="container" role="application" aria-label="생태 환경 퀴즈">
+      <aside class="sidebar" aria-hidden="false">
+        <div class="brand">
+          <div class="logo" aria-hidden="true">E🌿</div>
+          <div>
+            <h1>EcoQuiz</h1>
+            <p>생태와 환경을 배우는 10문제 퀴즈</p>
+          </div>
+        </div>
+
+        <div class="progress-wrap" aria-hidden="false">
+          <div class="progress-bar" aria-hidden="true">
+            <div class="progress-fill" id="progressFill" style="width:0%"></div>
+          </div>
+          <div class="meta">
+            <div id="qMeta" class="q-id">문제 1 / 10</div>
+            <div id="percent" class="q-id">0%</div>
+          </div>
+        </div>
+
+        <div class="score-card" aria-live="polite">
+          <h3>현재 점수</h3>
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <p class="score" id="score">0</p>
+            <div style="text-align:right">
+              <div class="chip" id="correctCount">정답: 0</div>
+              <div class="chip" id="wrongCount" style="margin-top:8px">오답: 0</div>
+            </div>
+          </div>
+
+          <div class="controls">
+            <button class="btn" id="btnPrev" title="이전 문제 (←)">이전</button>
+            <button class="btn primary" id="btnNext" title="다음 문제 (→)">다음</button>
+            <button class="btn" id="btnRestart" title="처음부터">재시작</button>
+          </div>
+        </div>
+
+        <div style="font-size:12px;color:var(--muted);margin-top:12px;">
+          팁: 키보드 ← → 로 이동, 숫자키(1-4)로 선택할 수 있습니다.
+        </div>
+      </aside>
+
+      <main class="main" id="mainContent">
+        <div class="card" role="main" aria-live="polite">
+          <div class="q-header">
+            <div class="q-id" id="qIndex">문제 1</div>
+            <div class="chip" id="difficulty">난이도: 보통</div>
+          </div>
+
+          <div class="q-text" id="qText">불러오는 중...</div>
+
+          <div class="options" id="options" role="list">
+            <!-- options injected here -->
+          </div>
+
+          <div class="explain" id="explain" aria-live="polite" style="display:none"></div>
+
+          <div class="actions">
+            <div class="nav">
+              <button class="btn" id="showAnswerBtn">정답 보기</button>
+            </div>
+            <div style="display:flex;gap:10px;align-items:center">
+              <div style="font-size:13px;color:var(--muted)">진행</div>
+            </div>
+          </div>
+
+          <!-- result overlay -->
+          <div class="overlay" id="overlay" aria-hidden="true">
+            <div class="result-card" role="dialog" aria-modal="true" aria-labelledby="resultTitle">
+              <h2 id="resultTitle">퀴즈 완료!</h2>
+              <div class="big-score" id="finalScore">0 / 10</div>
+              <div class="result-msg" id="resultMsg">결과 메시지</div>
+              <div style="display:flex;gap:12px;justify-content:center;margin-top:16px;">
+                <button class="btn primary" id="btnRetry">다시 풀기</button>
+                <button class="btn" id="btnReview">문제 다시 보기</button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    /* Quiz data: 10 ecology/environment questions
+       Each question: {q, options:[], answer: index, explain, difficulty}
+    */
+    const QUIZ = [
+      {
+        q: "온실가스 중 가장 큰 비중을 차지하여 지구 온난화의 주요 원인으로 알려진 기체는 무엇인가요?",
+        options: ["산소 (O₂)","이산화탄소 (CO₂)","질소 (N₂)","헬륨 (He)"],
+        answer: 1,
+        explain: "이산화탄소(CO₂)는 산업 활동, 화석연료 연소, 삼림 파괴 등으로 대기 중 농도가 증가하며 지구 온난화의 주요 원인입니다.",
+        difficulty: "쉬움"
+      },
+      {
+        q: "생태계에서 ‘기초생산자(primary producer)’에 해당하는 생물군은?",
+        options: ["초식동물","포식자","광합성을 하는 식물과 조류","분해자"],
+        answer: 2,
+        explain: "기초생산자는 태양광을 이용해 무기물을 유기물로 전환하는 광합성생물(식물, 조류, 일부 박테리아)입니다.",
+        difficulty: "보통"
+      },
+      {
+        q: "다음 중 플라스틱이 생태계에 미치는 영향으로 옳지 않은 것은?",
+        options: ["해양생물의 섭식 및 질식 유발","미세플라스틱이 먹이사슬을 통해 축적","플라스틱은 자연에서 빠르게 완전 분해된다","해안·생물 서식지 훼손 유발"],
+        answer: 2,
+        explain: "정답은 '플라스틱은 자연에서 빠르게 완전 분해된다'가 옳지 않은 문장입니다. 대부분의 플라스틱은 분해가 매우 느립니다.",
+        difficulty: "쉬움"
+      },
+      {
+        q: "지속 가능한 산림 관리(Sustainable forestry)의 핵심 목표가 아닌 것은?",
+        options: ["생물다양성 보전","지역주민의 생계 보장","목재를 무제한으로 빠르게 채취","토지 및 수자원 보전"],
+        answer: 2,
+        explain: "지속 가능한 산림 관리는 자원을 미래 세대까지 유지하는 것이 목적이므로 '무제한 빠른 채취'는 목표가 아닙니다.",
+        difficulty: "보통"
+      },
+      {
+        q: "사막화(desertification)를 가속화시키는 주된 인간 활동은 무엇인가요?",
+        options: ["과도한 방목과 삼림 벌채","지구 자기장 변화","대기 중 산소 증가","해양 산성화"],
+        answer: 0,
+        explain: "과도한 방목, 삼림 벌채, 비효율적 농업 등이 토양 악화와 식생 손실을 일으켜 사막화를 가속화합니다.",
+        difficulty: "보통"
+      },
+      {
+        q: "다음 중 '생물다양성(biodiversity)'에 포함되지 않는 항목은?",
+        options: ["유전자 다양성","종 다양성","생태계 다양성","대기 이온화도"],
+        answer: 3,
+        explain: "유전자, 종, 생태계 다양성은 생물다양성의 구성 요소이며 '대기 이온화도'는 포함되지 않습니다.",
+        difficulty: "쉬움"
+      },
+      {
+        q: "탄소중립(carbon neutrality)의 의미로 가장 적절한 것은?",
+        options: ["탄소 배출을 무조건 중단하는 것","배출한 탄소만큼 흡수하거나 상쇄해 순 배출을 0으로 만드는 것","탄소 배출을 증가시키는 것","탄소를 금지하는 정책"],
+        answer: 1,
+        explain: "탄소중립은 배출한 탄소를 흡수하거나 상쇄하여 순 배출(net emissions)을 0으로 만드는 것을 의미합니다.",
+        difficulty: "보통"
+      },
+      {
+        q: "다음 중 생태계 서비스(ecosystem services)에 해당하는 예시는?",
+        options: ["벌에 의한 작물 수분","인터넷 속도 향상","화학비료 가격 하락","핵융합 발전"],
+        answer: 0,
+        explain: "벌의 수분 활동은 생태계가 인간에게 제공하는 수분 서비스로, 생태계 서비스의 전형적인 예입니다.",
+        difficulty: "쉬움"
+      },
+      {
+        q: "해양 산성화(ocean acidification)의 직접적인 원인은 무엇인가요?",
+        options: ["해수 온도 저하","해양으로 흡수된 이산화탄소 증가","바다의 염분 감소","플랑크톤 개체수 증가"],
+        answer: 1,
+        explain: "대기 중 CO₂가 해수에 흡수되면 탄산이 형성되어 해수의 pH를 낮추며 해양 산성화를 일으킵니다.",
+        difficulty: "보통"
+      },
+      {
+        q: "도시 생태계에서 '녹지(urban green space)'가 제공하는 이점으로 가장 거리가 먼 것은?",
+        options: ["열섬효과 완화","대기질 개선","정서적·사회적 혜택 제공","토지 개발을 위한 무조건적 폐기"],
+        answer: 3,
+        explain: "녹지는 열섬 완화, 공기 정화, 휴식공간 제공 등 여러 이점을 제공하지만 '토지 개발을 위한 폐기'는 해당되지 않습니다.",
+        difficulty: "쉬움"
+      }
+    ];
+
+    // state
+    let state = {
+      cur: 0,
+      answers: Array(QUIZ.length).fill(null), // stores selected index or null
+      score: 0,
+      correct: 0,
+      wrong: 0,
+      finished: false
+    };
+
+    // elements
+    const qIndexEl = document.getElementById('qIndex');
+    const qTextEl = document.getElementById('qText');
+    const optionsEl = document.getElementById('options');
+    const explainEl = document.getElementById('explain');
+    const progressFill = document.getElementById('progressFill');
+    const qMeta = document.getElementById('qMeta');
+    const percentEl = document.getElementById('percent');
+    const scoreEl = document.getElementById('score');
+    const correctCountEl = document.getElementById('correctCount');
+    const wrongCountEl = document.getElementById('wrongCount');
+    const difficultyEl = document.getElementById('difficulty');
+    const btnPrev = document.getElementById('btnPrev');
+    const btnNext = document.getElementById('btnNext');
+    const btnRestart = document.getElementById('btnRestart');
+    const showAnswerBtn = document.getElementById('showAnswerBtn');
+    const overlay = document.getElementById('overlay');
+    const finalScore = document.getElementById('finalScore');
+    const resultMsg = document.getElementById('resultMsg');
+    const btnRetry = document.getElementById('btnRetry');
+    const btnReview = document.getElementById('btnReview');
+
+    // initialize
+    function init(){
+      renderQuestion();
+      updateSidebar();
+      bindEvents();
+    }
+
+    function renderQuestion(){
+      const q = QUIZ[state.cur];
+      qIndexEl.textContent = `문제 ${state.cur + 1}`;
+      qTextEl.textContent = q.q;
+      difficultyEl.textContent = `난이도: ${q.difficulty}`;
+      // create options
+      optionsEl.innerHTML = '';
+      q.options.forEach((opt, i) => {
+        const btn = document.createElement('button');
+        btn.className = 'option';
+        btn.setAttribute('role','button');
+        btn.setAttribute('tabindex','0');
+        btn.dataset.index = i;
+        btn.innerHTML = `
+          <div class="key">${String.fromCharCode(65 + i)}</div>
+          <div class="txt">${opt}</div>
+        `;
+        btn.addEventListener('click', ()=> choose(i));
+        btn.addEventListener('keyup', (e)=> { if(e.key === 'Enter') choose(i); });
+        optionsEl.appendChild(btn);
+      });
+
+      // show previous selection if exists
+      const sel = state.answers[state.cur];
+      if(sel !== null){
+        markSelection(sel, false);
+        showExplanation();
+      } else {
+        clearExplanation();
+      }
+
+      // update meta
+      qMeta.textContent = `문제 ${state.cur + 1} / ${QUIZ.length}`;
+      const pct = Math.round((state.cur / (QUIZ.length)) * 100);
+      percentEl.textContent = `${pct}%`;
+      progressFill.style.width = `${(state.cur / QUIZ.length) * 100}%`;
+
+      // disable prev/next where appropriate
+      btnPrev.disabled = state.cur === 0;
+      btnNext.disabled = state.cur === QUIZ.length - 1;
+    }
+
+    function choose(index){
+      if(state.finished) return;
+      // if already answered this question, ignore repeat clicks
+      if(state.answers[state.cur] !== null) return;
+      state.answers[state.cur] = index;
+
+      const correctIndex = QUIZ[state.cur].answer;
+      const isCorrect = index === correctIndex;
+      if(isCorrect){
+        state.score += 10; // each correct 10 points
+        state.correct++;
+      } else {
+        state.wrong++;
+      }
+
+      // mark UI
+      markSelection(index, true);
+
+      // show explanation
+      showExplanation();
+
+      // update sidebar
+      updateSidebar();
+
+      // if last question answered -> finish
+      if(state.answers.every(a => a !== null)){
+        finishQuiz();
+      }
+    }
+
+    function markSelection(index, reveal){
+      const optionNodes = Array.from(optionsEl.children);
+      optionNodes.forEach((node) => {
+        node.classList.remove('correct','wrong');
+      });
+      const correctIndex = QUIZ[state.cur].answer;
+      // highlight selected
+      const selectedNode = optionNodes[index];
+      if(reveal){
+        if(index === correctIndex){
+          selectedNode.classList.add('correct');
+        } else {
+          selectedNode.classList.add('wrong');
+          optionNodes[correctIndex].classList.add('correct');
+        }
+      } else {
+        // when revisiting show the previous result but don't change counts
+        if(state.answers[state.cur] !== null){
+          const prev = state.answers[state.cur];
+          if(prev === correctIndex){
+            optionNodes[prev].classList.add('correct');
+          } else {
+            optionNodes[prev].classList.add('wrong');
+            optionNodes[correctIndex].classList.add('correct');
+          }
+        }
+      }
+    }
+
+    function showExplanation(){
+      const q = QUIZ[state.cur];
+      explainEl.style.display = 'block';
+      explainEl.textContent = q.explain;
+    }
+    function clearExplanation(){
+      explainEl.style.display = 'none';
+      explainEl.textContent = '';
+    }
+
+    function updateSidebar(){
+      scoreEl.textContent = state.score;
+      correctCountEl.textContent = `정답: ${state.correct}`;
+      wrongCountEl.textContent = `오답: ${state.wrong}`;
+      const pct = Math.round((state.cur / QUIZ.length) * 100);
+      qMeta.textContent = `문제 ${state.cur + 1} / ${QUIZ.length}`;
+      percentEl.textContent = `${pct}%`;
+      progressFill.style.width = `${(state.cur / QUIZ.length) * 100}%`;
+    }
+
+    function next(){
+      if(state.cur < QUIZ.length - 1){
+        state.cur++;
+        renderQuestion();
+      } else {
+        // last -> show finish if finished or prompt user
+        if(state.answers.every(a => a !== null)){
+          finishQuiz();
+        } else {
+          // jump to first unanswered if any
+          const idx = state.answers.findIndex(a => a === null);
+          if(idx !== -1) {
+            state.cur = idx;
+            renderQuestion();
+          }
+        }
+      }
+    }
+
+    function prev(){
+      if(state.cur > 0){
+        state.cur--;
+        renderQuestion();
+      }
+    }
+
+    function finishQuiz(){
+      state.finished = true;
+      // calculate final metrics
+      finalScore.textContent = `${state.score} / ${QUIZ.length * 10}`;
+      // simple message
+      const ratio = state.score / (QUIZ.length * 10);
+      let msg = '';
+      if(ratio === 1) msg = "완벽해요! 생태·환경 지식이 아주 뛰어납니다.";
+      else if(ratio >= 0.8) msg = "잘하셨어요! 환경에 대한 이해도가 높습니다.";
+      else if(ratio >= 0.5) msg = "좋아요! 몇 가지 내용을 다시 보면 더 좋아요.";
+      else msg = "괜찮아요 — 배움의 시작입니다. 해설을 보고 복습해볼까요?";
+      resultMsg.textContent = msg;
+      overlay.classList.add('show');
+      overlay.setAttribute('aria-hidden','false');
+    }
+
+    function restart(){
+      state.cur = 0;
+      state.answers = Array(QUIZ.length).fill(null);
+      state.score = 0;
+      state.correct = 0;
+      state.wrong = 0;
+      state.finished = false;
+      overlay.classList.remove('show');
+      overlay.setAttribute('aria-hidden','true');
+      renderQuestion();
+      updateSidebar();
+    }
+
+    function review(){
+      overlay.classList.remove('show');
+      overlay.setAttribute('aria-hidden','true');
+      // go to first question
+      state.cur = 0;
+      renderQuestion();
+    }
+
+    // show answer button forced reveal for current question (if unanswered)
+    showAnswerBtn.addEventListener('click', ()=>{
+      if(state.answers[state.cur] === null){
+        // mark as answered wrong and reveal correct (but don't change counts)
+        // To avoid cheating by changing counts, we mark answer but not increase score.
+        const correctIndex = QUIZ[state.cur].answer;
+        markSelection(correctIndex, true);
+        explainEl.style.display = 'block';
+        explainEl.textContent = QUIZ[state.cur].explain;
+        // set a sentinel so it won't count as answered for finish-check
+        // we set answers[cur] = 'seen' to indicate user viewed answer; but to keep types consistent use -1
+        state.answers[state.cur] = -1;
+      }
+    });
+
+    btnPrev.addEventListener('click', prev);
+    btnNext.addEventListener('click', next);
+    btnRestart.addEventListener('click', ()=> {
+      if(confirm('퀴즈를 처음부터 다시 시작할까요? 현재 진행 내용은 사라집니다.')) restart();
+    });
+
+    btnRetry.addEventListener('click', restart);
+    btnReview.addEventListener('click', review);
+
+    // keyboard support
+    window.addEventListener('keydown', (e)=>{
+      if(e.key === 'ArrowRight') next();
+      if(e.key === 'ArrowLeft') prev();
+      if(['1','2','3','4'].includes(e.key)){
+        const idx = Number(e.key) - 1;
+        // ensure option exists
+        if(optionsEl.children[idx]) optionsEl.children[idx].click();
+      }
+      if(e.key === 'Escape' && state.finished){
+        overlay.classList.remove('show');
+        overlay.setAttribute('aria-hidden','true');
+      }
+    });
+
+    // allow clicking numbered nav on progress (future enhancement - but keep accessible)
+    // initial render
+    init();
+
+    // small enhancement: announce when all answered and not yet finished
+    setInterval(()=>{
+      if(!state.finished && state.answers.every(a => a !== null)){
+        finishQuiz();
+      }
+    },1500);
+
+  </script>
+</body>
+</html>
